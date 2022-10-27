@@ -1,7 +1,7 @@
 # CB-API-TinyPointOfSale
 This project contains sample code (C#) for an application demonstrating how to use the APIs needed for Point of Sale application that integrates with Cloudbeds.
 
-1. To use this application you will need to FIRST use the **CB-API-Explorer** sample to create an XML file that contains the access tokens (i.e. secrets) this application uses to log into your Cloudbeds property:
+1. To use this application you will need to FIRST use the **CB-API-Explorer** (https://github.com/cloudbeds/CB-API-Explorer) sample to create an XML file that contains the access tokens (i.e. secrets) this application uses to log into your Cloudbeds property:
 
     i. Load the CB-API-Explorer sample and run it
     
@@ -23,8 +23,8 @@ This project contains sample code (C#) for an application demonstrating how to u
      
          - All the menu items added to the guest’s bill are stored as line items in the guest's folio
          
-         - The notes field in the line item shows that the line items belong grouped together
+         - The notes field in each line item is written to show that the items belong grouped together
          
-         - A unique ID is stored with the folio entry to prevent duplicate submissions of the same bill.
+         - A unique ID is stored with the folio entry to prevent duplicate submissions of the same bill
          
        
