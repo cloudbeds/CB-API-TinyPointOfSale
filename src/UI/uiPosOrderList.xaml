@@ -1,0 +1,30 @@
+﻿<UserControl x:Class="TinySimplePointOfSale.uiPosOrderList"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:TinySimplePointOfSale"
+             mc:Ignorable="d" 
+             >
+    <StackPanel HorizontalAlignment="Left">
+        <StackPanel Orientation="Vertical" x:Name="spListOfPosOrderItems" HorizontalAlignment="Left">
+            <TextBlock>UNDONE: Placeholder menu items list here</TextBlock>
+        </StackPanel>
+        <Border Height="1" Background="#303030"></Border>
+        <Border Height="2" Background="#ffffff"></Border>
+        <Border Height="1" Background="#303030"></Border>
+        <Border Height="2" Background="#ffffff"></Border>
+        <Grid TextElement.FontSize="18" HorizontalAlignment="Left">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="28"></RowDefinition>
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="280"></ColumnDefinition>
+                <ColumnDefinition Width="80"></ColumnDefinition>
+                <ColumnDefinition Width="80"></ColumnDefinition>
+            </Grid.ColumnDefinitions>
+            <TextBlock x:Name="txtSummaryText" FontSize="14" Grid.Row="0" Grid.Column="0">Pre-tax/tip total: XXXX</TextBlock>
+        </Grid>
+    </StackPanel>
+    
+</UserControl>
