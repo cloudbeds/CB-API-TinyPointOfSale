@@ -9,7 +9,7 @@ This project contains sample code (C#) for an application demonstrating how to u
     
     iii. Click on the "Save the user access tokens to storage" button to store the access tokens in a local file
     
-    **Result:** You will not be able to run THIS (CB-API-TinyPointOfSale) application and it will use these secrets to log into your Cloudbeds property
+    **Result:** You will now be able to run THIS (CB-API-TinyPointOfSale) application and it will use these secrets to log into your Cloudbeds property
    
 2. This application implements a VERY SIMPLE Point of Sale system:
 
