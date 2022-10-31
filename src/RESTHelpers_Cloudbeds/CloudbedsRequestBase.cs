@@ -75,15 +75,35 @@ abstract class CloudbedsRequestBase
     }
 
     /// <summary>
+    /// Get the response stream
+    /// </summary>
+    /// <param name="response"></param>
+    /// <returns></returns>
+    private static Stream GetResponseStreamFromHttoResponseMessage(HttpResponseMessage response)
+    {
+        //var responseStream = response.Content.ReadAsStream();
+        //Use the "Async" call (so we can use this same code on Xamarin/Andriod/iPhone, which does not have the synchronous API (2022-10)
+        Stream? responseStream = null;
+        var readAsync = response.Content.ReadAsStreamAsync();
+        using (readAsync)
+        {
+            readAsync.Wait();
+            responseStream = readAsync.Result;
+        }
+        return responseStream;
+    }
+
+    /// <summary>
     /// Gets the web response as a Json document
     /// </summary>
     /// <param name="response"></param>
     /// <returns></returns>
     protected static JsonDocument GetWebResponseAsJson(HttpResponseMessage response)
     {
-        
+
         string streamText = "";
-        var responseStream = response.Content.ReadAsStream();
+
+        var responseStream = GetResponseStreamFromHttoResponseMessage(response);
         using (responseStream)
         {
             var streamReader = new StreamReader(responseStream);
@@ -105,7 +125,7 @@ abstract class CloudbedsRequestBase
     protected static System.Xml.XmlDocument GetWebResponseAsXml(HttpResponseMessage response)
     {
         string streamText = "";
-        var responseStream = response.Content.ReadAsStream();
+        var responseStream = GetResponseStreamFromHttoResponseMessage(response);
         using (responseStream)
         {
             var streamReader = new StreamReader(responseStream);
@@ -128,7 +148,7 @@ abstract class CloudbedsRequestBase
     protected static string GetWebResponseAsText(HttpResponseMessage response)
     {
         string streamText = "";
-        var responseStream = response.Content.ReadAsStream();
+        var responseStream = GetResponseStreamFromHttoResponseMessage(response);
         using (responseStream)
         {
             var streamReader = new StreamReader(responseStream);
@@ -155,7 +175,14 @@ abstract class CloudbedsRequestBase
         string requestUri = webRequest.RequestUri.ToString();
         try
         {
-            return HttpRequestsSingleton.Client.Send(webRequest);
+            //return HttpRequestsSingleton.Client.Send(webRequest);
+            //2022-10: Use Async call so this same code can run on Xamarin/Androud/iPhone
+            var asyncSend = HttpRequestsSingleton.Client.SendAsync(webRequest);
+            using (asyncSend)
+            {
+                asyncSend.Wait();
+                return asyncSend.Result;
+            }
         }
         catch (HttpRequestException webException)
         {

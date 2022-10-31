@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml;
+using System.Xml.Linq;
 
 
 /// <summary>
@@ -19,13 +20,46 @@ internal partial class CloudbedsAppConfig : ICloudbedsServerInfo
     public readonly string CloudbedsAppClientId;
     public readonly string CloudbedsAppClientSecret;
     
+
+
     /// <summary>
-    /// CONSTRUCTOR
+    /// Create a testing version of the class with fake data
+    /// </summary>
+    /// <returns></returns>
+    internal static CloudbedsAppConfig TESTING_CreateSimulatedAppConfig()
+    {
+        return new CloudbedsAppConfig(
+            "FAKE Server URL",
+            "FAKE CLIENT ID",
+            "FAKE CLIENT SECRET",
+            "FAKE OAUTH Redirect Uri");
+    }
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="serverUrl"></param>
+    /// <param name="clientId"></param>
+    /// <param name="clientSecret"></param>
+    /// <param name="authRedirectUri"></param>
+    private CloudbedsAppConfig(string serverUrl, string clientId, string clientSecret, string authRedirectUri)
+    {
+        this.CloudbedsServerUrl = serverUrl;
+        this.CloudbedsAppClientId = clientId;
+        this.CloudbedsAppClientSecret = clientSecret;
+        this.CloudbedsAppOAuthRedirectUri = authRedirectUri;
+
+    }
+
+    /// <summary>
+    /// Create the config
     /// </summary>
     /// <param name="filePathConfig"></param>
-    public CloudbedsAppConfig(string filePathConfig)
+    /// <returns></returns>
+    /// <exception cref="Exception"></exception>
+    public static CloudbedsAppConfig FromFile(string filePathConfig)
     {
-        if(!System.IO.File.Exists(filePathConfig))
+        if (!System.IO.File.Exists(filePathConfig))
         {
             throw new Exception("722-153: File does not exist: " + filePathConfig);
         }
@@ -33,15 +67,33 @@ internal partial class CloudbedsAppConfig : ICloudbedsServerInfo
         //==================================================================================
         //Load values from the TARGET SITE config file
         //==================================================================================
-        var xmlConfigTargetSite = new System.Xml.XmlDocument();
-        xmlConfigTargetSite.Load(filePathConfig);
+        var xmlConfigTargetProperty = new System.Xml.XmlDocument();
+        xmlConfigTargetProperty.Load(filePathConfig);
 
-        var xNode = xmlConfigTargetSite.SelectSingleNode("//Configuration/CloudbedsApp");
-        this.CloudbedsServerUrl = xNode.Attributes["serverUrl"].Value;
-        this.CloudbedsAppClientId = xNode.Attributes["clientId"].Value;
-        this.CloudbedsAppClientSecret = xNode.Attributes["secret"].Value;
-        this.CloudbedsAppOAuthRedirectUri = xNode.Attributes["oAuthRedirectUri"].Value;
+        return FromXmlDocument(xmlConfigTargetProperty);
     }
+
+    /// <summary>
+    /// Create the config
+    /// </summary>
+    /// <param name="filePathConfig"></param>
+    /// <returns></returns>
+    /// <exception cref="Exception"></exception>
+    public static CloudbedsAppConfig FromXmlDocument(XmlDocument xmlConfigTargetProperty)
+    {
+        var xNode = xmlConfigTargetProperty.SelectSingleNode("//Configuration/CloudbedsApp");
+        string cloudbedsServerUrl = xNode.Attributes["serverUrl"].Value;
+        string cloudbedsAppClientId = xNode.Attributes["clientId"].Value;
+        string cloudbedsAppClientSecret = xNode.Attributes["secret"].Value;
+        string cloudbedsAppOAuthRedirectUri = xNode.Attributes["oAuthRedirectUri"].Value;
+
+        return new CloudbedsAppConfig(
+            cloudbedsServerUrl,
+            cloudbedsAppClientId,
+            cloudbedsAppClientSecret,
+            cloudbedsAppOAuthRedirectUri);
+    }
+
 
     string ICloudbedsServerInfo.ServerUrl
     {

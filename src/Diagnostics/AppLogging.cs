@@ -7,8 +7,6 @@ using System;
 using System.Text;
 using System.IO;
 using System.Collections.Generic;
-using System.Data.Sql;
-using System.Data.SqlClient;
 
 internal static class AppLogging 
 {

@@ -24,19 +24,82 @@ internal static class AppSettings
 
 
     /// <summary>
+    /// TRUE: We want to use simulated data instead of loading live ata
+    /// FALSE: Connect to Cloudbeds and get real data
+    /// </summary>
+    public static bool UseSimulatedGuestData
+    {
+        get
+        {
+            return s_useSimulatedGuestData;
+        }
+        set
+        {
+            s_useSimulatedGuestData = value;
+        }
+    }
+    private static bool s_useSimulatedGuestData;
+
+    /// <summary>
     /// Load the user's preferred path to their secrets file
     /// </summary>
     /// <param name="text"></param>
     internal static string LoadPreference_PathAppSecretsConfig()
     {
+        //If there is an override, use it...
+        if(!string.IsNullOrWhiteSpace(s_override_pathAppSecretsConfig))
+        {
+            return s_override_pathAppSecretsConfig;
+        }
+
         return LoadRegistryString(Registry_Preference_DefaultAppSecretsPath);
     }
+    /// <summary>
+    /// Override if we don't want to use the system preference
+    /// </summary>
+    private static string? s_override_pathAppSecretsConfig = null;
 
+    /// <summary>
+    /// Override if we don't want to use the system preference
+    /// </summary>
+    /// <param name="filePath"></param>
+    internal static void SetOverride_PathAppSecretsConfig(string filePath)
+    {
+        s_override_pathAppSecretsConfig = filePath;
+    }
+
+
+
+    /// <summary>
+    /// Get the path that holds our session tokens
+    /// </summary>
+    /// <returns></returns>
     internal static string LoadPreference_PathUserAccessTokens()
     {
+        //If there is an override, use it...
+        if (!string.IsNullOrWhiteSpace(s_override_pathUserAccessTokens))
+        {
+            return s_override_pathUserAccessTokens;
+        }
+
         return LoadRegistryString(Registry_Preference_UserAccessTokensPath);
     }
-    //
+    /// <summary>
+    /// Override if we don't want to use the system preference
+    /// </summary>
+    private static string? s_override_pathUserAccessTokens= null;
+
+    /// <summary>
+    /// Override if we don't want to use the system preference
+    /// </summary>
+    /// <param name="filePath"></param>
+    internal static void SetOverride_UserAccessTokens(string filePath)
+    {
+        s_override_pathUserAccessTokens = filePath;
+    }
+
+
+
 
     /// <summary>
     /// Save the user's preferred path to their secrets file

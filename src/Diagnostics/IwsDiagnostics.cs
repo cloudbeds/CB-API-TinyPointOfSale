@@ -6,10 +6,6 @@
 using System;
 using System.Text;
 using System.Collections.Generic;
-using System.Web;
-using System.Data;
-using System.Data.Sql;
-using System.Data.SqlClient;
 using System.Diagnostics;
 internal static class IwsDiagnostics
 {

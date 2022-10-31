@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -20,18 +21,22 @@ namespace TinySimplePointOfSale
     /// </summary>
     public partial class MainWindow : Window
     {
-        /// <summary>
-        /// The currently selected Auth Context
-        /// </summary>
-        ICloudbedsAuthSessionBase _currentAuthSession;
-        ICloudbedsServerInfo _currentServerInfo;
-        CloudbedsGuestManager _currentGuestManager;
+        /*
+                /// <summary>
+                /// The currently selected Auth Context
+                /// </summary>
+                ICloudbedsAuthSessionBase _currentAuthSession;
+                ICloudbedsServerInfo _currentServerInfo;
+                CloudbedsGuestManager _currentGuestManager;
+                PosItemManager? _posItemManager = null;
+
+        */
+
         PosOrderManager? _currentPosOrderManger = null;
 
         //What Guest has been selected in the UI presently?
         CloudbedsGuest? _currentSelectedGuest = null;
 
-        PosItemManager? _posItemManager = null;
 
         public MainWindow()
         {
@@ -46,59 +51,6 @@ namespace TinySimplePointOfSale
         void UpdateCommandResultStatus(string text)
         {
             textBlockCommandResult.Text = text + " (" + DateTime.Now.ToString() + ")";
-        }
-
-
-        /// <summary>
-        /// Loads a token from persisted storage
-        /// </summary>
-        /// <param name="statusLogs"></param>
-        /// <exception cref="NotImplementedException"></exception>
-        private void LoadUserAuthTokenFromStorage(TaskStatusLogs statusLogs)
-        {
-            statusLogs.AddStatusHeader("Load Auth Tokens from storage");
-            var filePathToPersistedToken = txtPathToUserTokenSecrets.Text;
-            if (!System.IO.File.Exists(filePathToPersistedToken))
-            {
-                statusLogs.AddError("220825-805: Auth token file does not exist: " + filePathToPersistedToken);
-                throw new Exception("220825-805: Auth token file does not exist: " + filePathToPersistedToken);
-            }
-
-            
-            var filePathToAppSecrets = txtPathToAppSecrets.Text;
-            if (!System.IO.File.Exists(filePathToAppSecrets))
-            {
-                statusLogs.AddError("220825-814: App secrets file does not exist: " + filePathToAppSecrets);
-                throw new Exception("220825-814805: App secrets file does not exist: " + filePathToAppSecrets);
-            }
-            //----------------------------------------------------------
-            //Load the application-global configuration from storage
-            //(we need to to refresh the token)
-            //----------------------------------------------------------
-            var appConfigAndSecrets = new CloudbedsAppConfig(filePathToAppSecrets);
-            _currentServerInfo = appConfigAndSecrets;
-            
-            //----------------------------------------------------------
-            //Load the authentication secrets from storage
-            //----------------------------------------------------------
-            CloudbedsTransientSecretStorageManager authSecretsStorageManager =
-                CloudbedsTransientSecretStorageManager.LoadAuthTokensFromFile(filePathToPersistedToken, appConfigAndSecrets, true, statusLogs);
-
-            var authSession = authSecretsStorageManager.AuthSession;
-            //Sanity test
-            if (authSession == null)
-            {
-                statusLogs.AddError("220725-229: No auth session returned");
-            }
-            else
-            {
-                statusLogs.AddStatus("Successfully loaded auth token from storage");
-            }
-
-            //--------------------------------------------------------------------
-            //Store this at the class' level, so that it can be used by other calls
-            //--------------------------------------------------------------------
-            _currentAuthSession = authSession;            
         }
 
         /// <summary>
@@ -226,18 +178,14 @@ namespace TinySimplePointOfSale
             posOrderManager.DefaultNoteForLineItems = 
                 "Guest: " + selectedGuest.Guest_Name + ", Date: " + DateTime.Now.ToString();
 
-
-            //Make sure we are signed in...
-            EnsureSignedIn();
-
             //===============================================================
             //Post the order up to the server
             //===============================================================
             var statusLogs = TaskStatusLogsSingleton.Singleton;
 
             var postCharge = new CloudbedsPostChargeToGuest(
-                _currentServerInfo,
-                _currentAuthSession,
+                CloudbedsSingletons.CloudbedsServerInfo,
+                CloudbedsSingletons.CloudbedsAuthSession,
                 TaskStatusLogsSingleton.Singleton,
                 selectedGuest,
                 posOrderManager);
@@ -265,8 +213,6 @@ namespace TinySimplePointOfSale
             //Show the response in the UI
             txtCloudbedsSubmitResponse.Text = postCharge.CommandResults_SummaryText;
             uiArea_CloudbedsSubmitResponse.Visibility = Visibility.Visible;
-
-
 
             //Update the detailed logs
             UpdateStatusLogsText();
@@ -447,8 +393,7 @@ namespace TinySimplePointOfSale
             //Make sure we've stocked the menu...
             if (ctlPosOrderList.MenuItemsCount == 0)
             {
-                var posMenu = EnsurePointOfSale_ItemManager();
-                ctlPosOrderList.FillPosOrderItemsList(posMenu.Items);
+                ctlPosOrderList.FillPosOrderItemsList(CloudbedsSingletons.PointOfSaleItemManager.Items);
             }
         }
 
@@ -464,7 +409,7 @@ namespace TinySimplePointOfSale
             {
                 try
                 {
-                    var guestManager = EnsureGuestManager();
+                    var guestManager = CloudbedsSingletons.CloudbedsGuestManager;
                     guestManager.EnsureCachedData();
 
                     //Fill the UI
@@ -532,17 +477,14 @@ The UI acts as a multi-step wizard.  These buttons advance forward
             //---------------------------------------------------------------------
             //Load any configuration, or data from Cloudbeds that we ned
             //---------------------------------------------------------------------
-            EnsureSignedIn();
-            var guestManager = EnsureGuestManager();
-            guestManager.EnsureCachedData();
-            var posItemManager = EnsurePointOfSale_ItemManager();
+            CloudbedsSingletons.WarmUpCloudbedsDataCachesIfNeeded_Async();
 
             //---------------------------------------------------------------------
             //Reset the Order manager UI
             //---------------------------------------------------------------------
             var posOrderManager = new PosOrderManager();
             _currentPosOrderManger = posOrderManager;
-            ctlPosOrderList.FillPosOrderItemsList(posItemManager.Items);
+            ctlPosOrderList.FillPosOrderItemsList(CloudbedsSingletons.PointOfSaleItemManager.Items);
 
             //---------------------------------------------------------------------
             //Guest selector
@@ -571,50 +513,6 @@ prepared state
 #region "Ensure XXXXXXX"
 
         /// <summary>
-        /// Create/Load an item manager, if needed
-        /// </summary>
-        /// <returns></returns>
-        private PosItemManager EnsurePointOfSale_ItemManager()
-        {
-            if (_posItemManager == null)
-            {
-                _posItemManager = new PosItemManager();
-            }
-
-            return _posItemManager;
-        }
-
-        /// <summary>
-        /// Creates a guest manager object if necessary
-        /// </summary>
-        /// <returns></returns>
-        private CloudbedsGuestManager EnsureGuestManager()
-        {
-            EnsureSignedIn();
-
-            var guestManager = _currentGuestManager;
-            if (guestManager != null)
-            {
-                return guestManager;
-            }
-
-            var taskStatus = TaskStatusLogsSingleton.Singleton;
-
-            var authSession = _currentAuthSession;
-            var serverInfo = _currentServerInfo;
-            if ((authSession == null) || (serverInfo == null))
-            {
-                taskStatus.AddError("1021-835: No auth/server session");
-                throw new Exception("1021-835: No auth/server session");
-            }
-
-            guestManager = new CloudbedsGuestManager(serverInfo, authSession, taskStatus);
-            _currentGuestManager = guestManager;
-            return guestManager;
-        }
-
-
-        /// <summary>
         /// Create an order manager if we need one
         /// </summary>
         /// <returns></returns>
@@ -629,29 +527,7 @@ prepared state
 
             return orderManager;
         }
-        /// <summary>
-        /// Ensure we are signed in
-        /// </summary>
-        private void EnsureSignedIn()
-        {
-            if (_currentAuthSession != null)
-            {
-                return;
-            }
-
-            var statusLogs = TaskStatusLogsSingleton.Singleton;
-
-            try
-            {
-                LoadUserAuthTokenFromStorage(statusLogs);
-            }
-            catch (Exception ex)
-            {
-                statusLogs.AddError("220725-803: Error loading or validating persisted token: " + ex.Message); ;
-            }
-        }
-
-        #endregion
+#endregion
 
 
 /****************************************************************************************
@@ -667,14 +543,11 @@ Buttons used to trigger testing/diagnostic code (not part of main functional app
         /// <param name="e"></param>
         private void btnGetGuests_Click(object sender, RoutedEventArgs e)
         {
-            //Make sure we are signed in...
-            EnsureSignedIn();
-
             bool wasSuccess = false;
             var statusLogs = TaskStatusLogsSingleton.Singleton;
             try
             {
-                var guestManager = EnsureGuestManager();
+                var guestManager = CloudbedsSingletons.CloudbedsGuestManager;
                 guestManager.ForceRefreshOfCachedData();
 
                 //Fill the UI
@@ -698,30 +571,49 @@ Buttons used to trigger testing/diagnostic code (not part of main functional app
             }
         }
 
+        #endregion
+
+/****************************************************************************************
+CONFIGURATION TAB
+*****************************************************************************************/
+#region "Config Tab"
+
         /// <summary>
-        /// TESTING FUNCTION: Sign into the Cloudbeds API
+        /// Set a configuration override
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void btnSignIn_Click(object sender, RoutedEventArgs e)
+        private void btnConfigSetPathToUserTokenSecrets_Click(object sender, RoutedEventArgs e)
         {
-            EnsureSignedIn();
-
-            var statusLogs = TaskStatusLogsSingleton.Singleton;
-            UpdateStatusText(statusLogs, true);
-
-            if (_currentAuthSession != null)
+            string path = txtPathToUserTokenSecrets.Text;
+            if(!File.Exists(path))
             {
-                UpdateCommandResultStatus("SUCCESS signing in");
+                MessageBox.Show("File path does not exist: " + path);
+                return;
             }
-            else
-            {
-                UpdateCommandResultStatus("FAILURE signing in");
-            }
+
+            //Update the override in the app settings
+            AppSettings.SetOverride_UserAccessTokens(path);
+            MessageBox.Show("Path set!");
         }
 
+        /// <summary>
+        /// Set a configuration override
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void btnConfigSetPathToAppSecrets_Click(object sender, RoutedEventArgs e)
+        {
+            string path = txtPathToAppSecrets.Text;
+            if (!File.Exists(path))
+            {
+                MessageBox.Show("File path does not exist: " + path);
+                return;
+            }
+            AppSettings.SetOverride_PathAppSecretsConfig(path);
+            MessageBox.Show("Path set!");
+        }
 
-        #endregion
-
+    #endregion
     }
 }
